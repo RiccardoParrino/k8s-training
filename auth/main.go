@@ -3,7 +3,6 @@ package main
 import (
 	"bytes"
 	"encoding/json"
-	"fmt"
 	"io"
 	"log"
 	"net/http"
@@ -53,13 +52,13 @@ func GenerateAccessJWT(username string) (string, string, error) {
 	}
 
 	accessToken := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	accessTokenString, err := accessToken.SignedString("jwtSecret")
+	accessTokenString, err := accessToken.SignedString([]byte("jwtSecret"))
 	if err != nil {
 		return "", "", err
 	}
 
 	refreshToken := jwt.NewWithClaims(jwt.SigningMethodHS256, refreshClaims)
-	refreshTokenString, err := refreshToken.SignedString("jwtSecret")
+	refreshTokenString, err := refreshToken.SignedString([]byte("jwtSecret"))
 	if err != nil {
 		return "", "", err
 	}
@@ -113,23 +112,22 @@ func jwtAccessHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Invalid request", http.StatusBadRequest)
 		return
 	}
-	fmt.Println(loginRequest)
 
 	accessToken, refreshToken, err := GenerateAccessJWT(loginRequest.Username)
 	if err != nil {
-		response := TokenResponse{
-			Access:  accessToken,
-			Refresh: refreshToken,
-		}
-		w.WriteHeader(http.StatusOK)
-		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(response)
-	} else {
 		response := TokenResponse{
 			Access:  "",
 			Refresh: "",
 		}
 		w.WriteHeader(http.StatusUnauthorized)
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(response)
+	} else {
+		response := TokenResponse{
+			Access:  accessToken,
+			Refresh: refreshToken,
+		}
+		w.WriteHeader(http.StatusOK)
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(response)
 	}
