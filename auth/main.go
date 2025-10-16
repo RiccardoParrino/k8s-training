@@ -4,6 +4,9 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
+	"time"
+
+	"github.com/golang-jwt/jwt/v5"
 )
 
 type TokenResponse struct {
@@ -35,6 +38,32 @@ func verifyUserCredentials(r *http.Request) (bool, error) {
 	return true, nil
 }
 
+func GenerateAccessJWT(username string) (string, string, error) {
+	claims := jwt.MapClaims{
+		"username": username,
+		"exp":      time.Now().Add(time.Hour * 24).Unix(),
+	}
+
+	refreshClaims := jwt.MapClaims{
+		"username": username,
+		"exp":      time.Now().Add(time.Hour * 24 * 7).Unix(),
+	}
+
+	accessToken := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	accessTokenString, err := accessToken.SignedString("jwtSecret")
+	if err != nil {
+		return "", "", err
+	}
+
+	refreshToken := jwt.NewWithClaims(jwt.SigningMethodHS256, refreshClaims)
+	refreshTokenString, err := refreshToken.SignedString("jwtSecret")
+	if err != nil {
+		return "", "", err
+	}
+
+	return accessTokenString, refreshTokenString, nil
+}
+
 func jwtAccessHandler(w http.ResponseWriter, r *http.Request) {
 	resp, err := verifyUserCredentials(r)
 	if err != nil || !resp {
@@ -43,14 +72,31 @@ func jwtAccessHandler(w http.ResponseWriter, r *http.Request) {
 		json.NewEncoder(w).Encode(`{"message":"Invalid credentials"}`)
 	}
 
-	response := TokenResponse{
-		Access:  "temp",
-		Refresh: "temp",
+	var loginRequest LoginRequest
+	err = json.NewDecoder(r.Body).Decode(&loginRequest)
+	if err != nil {
+		http.Error(w, "Invalid request", http.StatusBadRequest)
+		return
 	}
 
-	w.WriteHeader(http.StatusOK)
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(response)
+	accessToken, refreshToken, err := GenerateAccessJWT(loginRequest.Username)
+	if err != nil {
+		response := TokenResponse{
+			Access:  accessToken,
+			Refresh: refreshToken,
+		}
+		w.WriteHeader(http.StatusOK)
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(response)
+	} else {
+		response := TokenResponse{
+			Access:  "",
+			Refresh: "",
+		}
+		w.WriteHeader(http.StatusUnauthorized)
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(response)
+	}
 }
 
 func jwtRefreshHandler(w http.ResponseWriter, r *http.Request) {
