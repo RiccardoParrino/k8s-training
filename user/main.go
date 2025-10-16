@@ -94,6 +94,6 @@ func loginRequestHandler(w http.ResponseWriter, r *http.Request) {
 func main() {
 	http.HandleFunc("/api/login", loginRequestHandler)
 
-	log.Println("Authentication Service running on :3000")
-	http.ListenAndServe(":3000", nil)
+	log.Println("Authentication Service running on :3001")
+	http.ListenAndServe(":3001", nil)
 }
