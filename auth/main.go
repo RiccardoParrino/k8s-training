@@ -1,7 +1,10 @@
 package main
 
 import (
+	"bytes"
 	"encoding/json"
+	"fmt"
+	"io"
 	"log"
 	"net/http"
 	"time"
@@ -64,12 +67,44 @@ func GenerateAccessJWT(username string) (string, string, error) {
 	return accessTokenString, refreshTokenString, nil
 }
 
+func cloneRequest(req *http.Request) (*http.Request, error) {
+	// Read the body
+	var bodyBytes []byte
+	if req.Body != nil {
+		var err error
+		bodyBytes, err = io.ReadAll(req.Body)
+		if err != nil {
+			return nil, err
+		}
+		// Reset original request Body so it can be read again too
+		req.Body = io.NopCloser(bytes.NewBuffer(bodyBytes))
+	}
+
+	// Create a shallow copy of the request
+	newReq := req.Clone(req.Context())
+
+	// Set the body of the new request
+	if bodyBytes != nil {
+		newReq.Body = io.NopCloser(bytes.NewBuffer(bodyBytes))
+	}
+
+	return newReq, nil
+}
+
 func jwtAccessHandler(w http.ResponseWriter, r *http.Request) {
-	resp, err := verifyUserCredentials(r)
+
+	rCopy, err := cloneRequest(r)
+	if err != nil {
+		http.Error(w, "failed to copy request", http.StatusInternalServerError)
+		return
+	}
+
+	resp, err := verifyUserCredentials(rCopy)
 	if err != nil || !resp {
 		w.WriteHeader(http.StatusUnauthorized)
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(`{"message":"Invalid credentials"}`)
+		return
 	}
 
 	var loginRequest LoginRequest
@@ -78,6 +113,7 @@ func jwtAccessHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Invalid request", http.StatusBadRequest)
 		return
 	}
+	fmt.Println(loginRequest)
 
 	accessToken, refreshToken, err := GenerateAccessJWT(loginRequest.Username)
 	if err != nil {
