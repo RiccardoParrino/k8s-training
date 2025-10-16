@@ -15,7 +15,16 @@ type VerifyResponse struct {
 	Valid bool `json:"valid"`
 }
 
+type LoginRequest struct {
+	Username string `json:"username"`
+	Password string `json:"password"`
+}
+
 func jwtAccessHandler(w http.ResponseWriter, r *http.Request) {
+	var loginRequest LoginRequest
+	json.NewDecoder(r.Body).Decode(&loginRequest)
+	log.Println(loginRequest)
+
 	response := TokenResponse{
 		Access:  "temp",
 		Refresh: "temp",
