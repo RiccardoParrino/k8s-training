@@ -20,10 +20,28 @@ type LoginRequest struct {
 	Password string `json:"password"`
 }
 
+func verifyUserCredentials(r *http.Request) (bool, error) {
+
+	resp, err := http.Post("http://localhost:3001/api/login", "application/json", r.Body)
+	if err != nil {
+		return false, err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return false, nil
+	}
+
+	return true, nil
+}
+
 func jwtAccessHandler(w http.ResponseWriter, r *http.Request) {
-	var loginRequest LoginRequest
-	json.NewDecoder(r.Body).Decode(&loginRequest)
-	log.Println(loginRequest)
+	resp, err := verifyUserCredentials(r)
+	if err != nil || !resp {
+		w.WriteHeader(http.StatusUnauthorized)
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(`{"message":"Invalid credentials"}`)
+	}
 
 	response := TokenResponse{
 		Access:  "temp",
