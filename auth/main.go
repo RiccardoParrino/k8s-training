@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"log"
 	"net/http"
@@ -137,13 +138,77 @@ func jwtAccessHandler(w http.ResponseWriter, r *http.Request) {
 
 func jwtRefreshHandler(w http.ResponseWriter, r *http.Request) {
 	response := TokenResponse{
-		Access:  "temp",
-		Refresh: "temp",
+		Access:  "",
+		Refresh: "",
 	}
+
+	authorization := r.Header.Get("Authorization")
+	token := strings.Split(authorization, ` `)[1]
+
+	valid := VerifyJWT(token)
+	if !valid {
+		w.WriteHeader(http.StatusUnauthorized)
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(response)
+		return
+	}
+
+	username := ExtractClaims(token)
+	accessToken, refresh_token, err := GenerateAccessJWT(username)
+	if err != nil {
+		w.WriteHeader(http.StatusUnauthorized)
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(response)
+		return
+	}
+	response.Access = accessToken
+	response.Refresh = refresh_token
 
 	w.WriteHeader(http.StatusOK)
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(response)
+}
+
+func ExtractClaims(token string) string {
+
+	tokenString, err := jwt.Parse(token, func(token *jwt.Token) (interface{}, error) {
+		// Ensure the signing method is HMAC
+		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil, errors.New("unexpected signing method")
+		}
+		return []byte("jwtSecret"), nil
+	})
+	if err != nil {
+		return ""
+	}
+
+	claims, ok := tokenString.Claims.(jwt.MapClaims)
+	if !ok {
+		return ""
+	}
+
+	username, ok := claims["username"].(string)
+	if !ok {
+		return ""
+	}
+
+	return username
+}
+
+func VerifyJWT(token string) bool {
+	tokenString, err := jwt.Parse(token, func(token *jwt.Token) (interface{}, error) {
+		// Ensure the signing method is HMAC
+		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil, errors.New("unexpected signing method")
+		}
+		return []byte("jwtSecret"), nil
+	})
+	if err != nil {
+		fmt.Println(err)
+		return false
+	}
+
+	return tokenString.Valid
 }
 
 func jwtVerifyHandler(w http.ResponseWriter, r *http.Request) {
