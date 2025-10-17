@@ -3,9 +3,11 @@ package main
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"io"
 	"log"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
@@ -146,6 +148,26 @@ func jwtRefreshHandler(w http.ResponseWriter, r *http.Request) {
 
 func jwtVerifyHandler(w http.ResponseWriter, r *http.Request) {
 	response := VerifyResponse{Valid: true}
+
+	authorization := r.Header.Get("Authorization")
+	token := strings.Split(authorization, ` `)[1]
+
+	// Parse and validate token
+	tokenString, err := jwt.Parse(token, func(token *jwt.Token) (interface{}, error) {
+		// Ensure the signing method is HMAC
+		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil, errors.New("unexpected signing method")
+		}
+		return []byte("jwtSecret"), nil
+	})
+
+	if !tokenString.Valid || err != nil {
+		response.Valid = tokenString.Valid
+		w.WriteHeader(http.StatusUnauthorized)
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(response)
+		return
+	}
 
 	w.WriteHeader(http.StatusOK)
 	w.Header().Set("Content-Type", "application/json")
