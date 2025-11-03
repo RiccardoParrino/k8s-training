@@ -1,4 +1,4 @@
-package com.parrino.riccardo.transaction;
+package com.parrino.riccardo.model.sales;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -11,7 +11,7 @@ import lombok.Setter;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class TransactionResponse {
-    private Long transactionId;
-    private boolean transactionResponse;
+public class SalesResponse {
+    private Long requestId;
+    private Boolean accepted;
 }

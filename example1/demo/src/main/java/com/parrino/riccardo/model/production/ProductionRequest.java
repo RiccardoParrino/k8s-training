@@ -1,4 +1,4 @@
-package com.parrino.riccardo.transaction;
+package com.parrino.riccardo.model.production;
 
 import java.util.List;
 
@@ -15,7 +15,7 @@ import lombok.Setter;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class TransactionRequest {
-    private Long transactionId;
+public class ProductionRequest {
+    private Long productionRequestId;
     private List<Product> productList;
 }

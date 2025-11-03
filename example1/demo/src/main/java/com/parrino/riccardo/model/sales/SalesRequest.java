@@ -1,4 +1,4 @@
-package com.parrino.riccardo.production;
+package com.parrino.riccardo.model.sales;
 
 import java.util.List;
 
@@ -10,12 +10,12 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-@Getter
 @Setter
+@Getter
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class ProductionRequest {
-    private Long productionRequestId;
-    private List<Product> productList;
+public class SalesRequest {
+    private Long requestId;
+    private List<Product> products;
 }

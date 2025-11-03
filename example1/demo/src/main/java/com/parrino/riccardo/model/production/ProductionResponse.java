@@ -1,4 +1,4 @@
-package com.parrino.riccardo.sales;
+package com.parrino.riccardo.model.production;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -11,7 +11,7 @@ import lombok.Setter;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class SalesResponse {
-    private Long requestId;
-    private Boolean accepted;
+public class ProductionResponse {
+    private Long productionRequestId;
+    private Integer state; // in coda:0, in lavorazione:1, terminato:2
 }

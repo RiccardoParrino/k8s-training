@@ -2,7 +2,7 @@ package com.parrino.riccardo.sales.rest;
 
 import org.springframework.web.bind.annotation.RestController;
 
-import com.parrino.riccardo.model.SalesRequest;
+import com.parrino.riccardo.model.sales.SalesRequest;
 
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody; 
